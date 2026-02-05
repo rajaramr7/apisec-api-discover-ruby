@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "api-discover"
+version = "0.1.0"
+description = "Static analysis tool to discover API endpoints in Rails codebases"
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.1",
+    "tree-sitter>=0.23,<0.25",
+    "tree-sitter-ruby>=0.23,<0.25",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.scripts]
+api-discover = "api_discover.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["api_discover*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
