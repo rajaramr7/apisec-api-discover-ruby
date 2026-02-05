@@ -1,0 +1,104 @@
+name: "API Discover"
+description: "Statically analyze a Rails codebase to discover API endpoints, flag unprotected shadow APIs, and generate an OpenAPI 3.0 spec."
+author: "rajaramr7"
+
+branding:
+  icon: "search"
+  color: "orange"
+
+inputs:
+  source:
+    description: "Path to the Rails application (relative to workspace root)"
+    required: false
+    default: "."
+  output:
+    description: "Output file path for the OpenAPI spec"
+    required: false
+    default: "openapi-spec.yaml"
+  format:
+    description: "Output format: yaml or json"
+    required: false
+    default: "yaml"
+  show-all:
+    description: "Include all endpoints in summary (not just unprotected)"
+    required: false
+    default: "false"
+  include-conditional:
+    description: "Include environment-conditional routes in spec"
+    required: false
+    default: "false"
+  exclude-engines:
+    description: "Skip mounted engines"
+    required: false
+    default: "false"
+  token:
+    description: "Git auth token for private repos"
+    required: false
+    default: ""
+  fail-on-unprotected:
+    description: "Exit with failure if unprotected endpoints are found (quality gate)"
+    required: false
+    default: "false"
+  comment-on-pr:
+    description: "Post results as a PR comment"
+    required: false
+    default: "false"
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.11"
+
+outputs:
+  spec-path:
+    description: "Path to the generated OpenAPI spec file"
+    value: ${{ steps.run.outputs.spec-path }}
+  total-endpoints:
+    description: "Total number of discovered endpoints"
+    value: ${{ steps.run.outputs.total-endpoints }}
+  authenticated-count:
+    description: "Number of authenticated endpoints"
+    value: ${{ steps.run.outputs.authenticated-count }}
+  unprotected-count:
+    description: "Number of unprotected endpoints"
+    value: ${{ steps.run.outputs.unprotected-count }}
+  unknown-count:
+    description: "Number of endpoints with unknown auth status"
+    value: ${{ steps.run.outputs.unknown-count }}
+  has-unprotected:
+    description: "Whether any unprotected endpoints were found (true/false)"
+    value: ${{ steps.run.outputs.has-unprotected }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install api-discover
+      shell: bash
+      run: pip install "${{ github.action_path }}"
+
+    - name: Run api-discover
+      id: run
+      shell: bash
+      env:
+        INPUT_SOURCE: ${{ inputs.source }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_SHOW_ALL: ${{ inputs.show-all }}
+        INPUT_INCLUDE_CONDITIONAL: ${{ inputs.include-conditional }}
+        INPUT_EXCLUDE_ENGINES: ${{ inputs.exclude-engines }}
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_FAIL_ON_UNPROTECTED: ${{ inputs.fail-on-unprotected }}
+      run: python "${{ github.action_path }}/entrypoint.py"
+
+    - name: Comment on PR
+      if: inputs.comment-on-pr == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        BODY=$(cat "$GITHUB_STEP_SUMMARY")
+        gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY" --repo "${{ github.repository }}"

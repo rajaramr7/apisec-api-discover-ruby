@@ -173,6 +173,81 @@ Scans controllers for authentication filters by:
 
 Extracts `params.require(:model).permit(:field1, :field2)` from controller methods ending in `_params`, and maps them to OpenAPI request body schemas.
 
+## GitHub Action
+
+Use api-discover as a GitHub Action to automatically scan your Rails app on every push or PR.
+
+### Basic Usage
+
+```yaml
+- uses: rajaramr7/apisec-api-discover-ruby@main
+  with:
+    source: "."  # path to your Rails app (default: repo root)
+```
+
+### Full Example
+
+```yaml
+name: API Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  api-discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Discover API endpoints
+        id: discover
+        uses: rajaramr7/apisec-api-discover-ruby@main
+        with:
+          source: "."
+          output: openapi-spec.yaml
+          format: yaml
+          show-all: "true"
+          fail-on-unprotected: "true"
+          comment-on-pr: "true"
+
+      - name: Upload OpenAPI spec
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: openapi-spec.yaml
+```
+
+### Inputs
+
+| Input | Default | Description |
+|---|---|---|
+| `source` | `.` | Path to the Rails app |
+| `output` | `openapi-spec.yaml` | Output file path |
+| `format` | `yaml` | `yaml` or `json` |
+| `show-all` | `false` | Include all endpoints in summary |
+| `include-conditional` | `false` | Include env-conditional routes |
+| `exclude-engines` | `false` | Skip mounted engines |
+| `token` | | Git auth token for private repos |
+| `fail-on-unprotected` | `false` | Fail the step if unprotected endpoints found |
+| `comment-on-pr` | `false` | Post results as a PR comment |
+| `python-version` | `3.11` | Python version to use |
+
+### Outputs
+
+| Output | Description |
+|---|---|
+| `spec-path` | Path to the generated spec file |
+| `total-endpoints` | Total number of discovered endpoints |
+| `authenticated-count` | Endpoints with authentication |
+| `unprotected-count` | Endpoints without authentication |
+| `unknown-count` | Endpoints with unknown auth status |
+| `has-unprotected` | `true` if any unprotected endpoints found |
+
+### Quality Gate
+
+Set `fail-on-unprotected: "true"` to use api-discover as a quality gate. The step will exit with a failure if any unprotected (shadow) APIs are found, blocking the PR from merging.
+
 ## Limitations
 
 - **Static analysis only** — the Rails app is never booted. Constants and runtime values cannot be resolved.
