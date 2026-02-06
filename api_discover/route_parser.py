@@ -115,7 +115,15 @@ class RouteParser:
         actions = self._filter_actions(RESOURCE_ACTIONS, opts)
 
         new_ctx = context.copy()
-        new_ctx.path_prefix = self._join_path(context.path_prefix, path_name)
+        # If nested inside a parent resource, insert /:parent_id before this resource
+        if context.resource_name:
+            parent_singular = singularize(context.resource_name)
+            parent_param = context.resource_param.lstrip(":")
+            parent_id = f"{parent_singular}_{parent_param}"
+            parent_base = f"{context.path_prefix}/:{parent_id}"
+            new_ctx.path_prefix = self._join_path(parent_base, path_name)
+        else:
+            new_ctx.path_prefix = self._join_path(context.path_prefix, path_name)
         new_ctx.module_prefix = context.module_prefix
         new_ctx.controller = self._resolve_controller(context, controller)
         new_ctx.resource_name = name
