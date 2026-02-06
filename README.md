@@ -248,6 +248,15 @@ jobs:
 
 Set `fail-on-unprotected: "true"` to use api-discover as a quality gate. The step will exit with a failure if any unprotected (shadow) APIs are found, blocking the PR from merging.
 
+## Security & Privacy
+
+- **No code execution** — your Rails application is never booted, loaded, or executed. All analysis is purely static, performed by reading source files only.
+- **No data leaves your environment** — everything runs locally in your CI runner (or on your machine). There are no external API calls, no telemetry, no phone-home behavior. Zero network activity.
+- **No credentials stored** — if you provide a `--token` for private repo access, it is used only for the `git clone` and is never logged, cached, or transmitted.
+- **Read-only** — the tool does not modify, write to, or delete any files in your codebase. The only file it creates is the output spec, in a path you specify.
+- **Fully open source** — the entire codebase is available for review. No compiled binaries, no obfuscated code, no external dependencies beyond well-known Python packages (tree-sitter, PyYAML, Click, Rich).
+- **Runs in your own GitHub runner** — when used as a GitHub Action, it executes inside your workflow runner. Nothing is sent to third-party services.
+
 ## Limitations
 
 - **Static analysis only** — the Rails app is never booted. Constants and runtime values cannot be resolved.
